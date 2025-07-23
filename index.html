@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Interval Calculator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f7f7f7;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 1rem;
+    }
+    .output {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .output p {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Interval Calculator (Unlimited Octaves)</h2>
+
+<label>Enter Half Steps:</label>
+<input type="number" id="halfStepsInput" min="0" />
+
+<label>Or Interval Short Name (e.g., m2, M3, P12, M17):</label>
+<input type="text" id="shortNameInput" placeholder="M10">
+
+<div class="output">
+  <p><strong>Half Steps:</strong> <span id="hs">—</span></p>
+  <p><strong>Short Name:</strong> <span id="short">—</span></p>
+  <p><strong>Full Name:</strong> <span id="full">—</span></p>
+  <p><strong>Compound Degree:</strong> <span id="compound">—</span></p>
+  <p><strong>Example Note from C:</strong> <span id="note">—</span></p>
+</div>
+
+<script>
+const qualities = {
+  "P": { 1: 0, 4: 5, 5: 7, 8: 12 }, // Perfect unison, 4th, 5th, octave
+  "M": { 2: 2, 3: 4, 6: 9, 7: 11 },
+  "m": { 2: 1, 3: 3, 6: 8, 7: 10 },
+  "A": { 4: 6, 11: 18 },
+  "d": { 5: 6 }
+};
+
+const reverseMap = {
+  0: "P1", 1: "m2", 2: "M2", 3: "m3", 4: "M3", 5: "P4", 6: "A4/d5", 7: "P5",
+  8: "m6", 9: "M6", 10: "m7", 11: "M7", 12: "P8"
+};
+
+const fullNames = {
+  "P1": "Perfect Unison", "m2": "Minor 2nd", "M2": "Major 2nd",
+  "m3": "Minor 3rd", "M3": "Major 3rd", "P4": "Perfect 4th",
+  "A4": "Augmented 4th", "d5": "Diminished 5th", "P5": "Perfect 5th",
+  "m6": "Minor 6th", "M6": "Major 6th", "m7": "Minor 7th", "M7": "Major 7th",
+  "P8": "Perfect Octave"
+};
+
+const noteNames = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+
+function fromHalfSteps(hs) {
+  const base = hs % 12;
+  const octave = Math.floor(hs / 12);
+  const note = noteNames[base] + (octave > 0 ? ` (octave ${octave})` : "");
+
+  let short = reverseMap[base] || `${base} semitones`;
+  let full = fullNames[short] || "Unknown Interval";
+  let compound = (octave === 0) ? "Simple" : `${octave + 1}th` + (octave > 1 ? " (compound)" : "");
+
+  return { hs, short, full, compound, note };
+}
+
+function fromShortName(input) {
+  const match = input.match(/^([PmMdA])(\d{1,2})$/);
+  if (!match) return null;
+  const quality = match[1];
+  const degree = parseInt(match[2]);
+
+  const baseDegree = (degree - 1) % 7 + 1; // Normalize to 1–7 scale
+  const octave = Math.floor((degree - 1) / 7);
+  let baseHalfSteps = qualities[quality]?.[baseDegree];
+  if (baseHalfSteps === undefined) return null;
+
+  const totalHS = baseHalfSteps + 12 * octave;
+  return fromHalfSteps(totalHS);
+}
+
+function updateFromHalfSteps() {
+  const hs = parseInt(document.getElementById("halfStepsInput").value);
+  if (isNaN(hs) || hs < 0) return clearOutputs();
+  const result = fromHalfSteps(hs);
+  displayResult(result);
+  document.getElementById("shortNameInput").value = result.short;
+}
+
+function updateFromShortName() {
+  const input = document.getElementById("shortNameInput").value.trim();
+  const result = fromShortName(input);
+  if (!result) return clearOutputs();
+  displayResult(result);
+  document.getElementById("halfStepsInput").value = result.hs;
+}
+
+function displayResult(result) {
+  document.getElementById("hs").textContent = result.hs;
+  document.getElementById("short").textContent = result.short;
+  document.getElementById("full").textContent = result.full;
+  document.getElementById("compound").textContent = result.compound;
+  document.getElementById("note").textContent = result.note;
+}
+
+function clearOutputs() {
+  ["hs", "short", "full", "compound", "note"].forEach(id =>
+    document.getElementById(id).textContent = "—"
+  );
+}
+
+document.getElementById("halfStepsInput").addEventListener("input", updateFromHalfSteps);
+document.getElementById("shortNameInput").addEventListener("input", updateFromShortName);
+</script>
+
+</body>
+</html>
